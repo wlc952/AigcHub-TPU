@@ -1,0 +1,15 @@
+jieba
+pypinyin
+g2p_en
+whisper_timestamped
+torch==2.0.1
+torchaudio==2.0.2
+numpy
+numba
+scipy
+transformers
+librosa
+soundfile
+yacs
+onnxruntime
+nltk
