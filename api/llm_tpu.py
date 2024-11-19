@@ -1,47 +1,18 @@
-from fastapi import Form
 from fastapi.responses import JSONResponse, StreamingResponse
 from api.base_api import BaseAPIRouter, change_dir, init_helper
-from typing import Optional
 import argparse
-import os,sys
-import re
+import os
 from pydantic import BaseModel, Field
-from difflib import get_close_matches
 
 app_name = "llm_tpu"
-
-def match_model(model_name, patterns):
-    model_name = re.sub(r'\W', '', model_name.lower().replace('_', ''))
-    normalized_patterns = [re.sub(r'\W', '', pattern.lower().replace('_', '')) for pattern in patterns]
-    for x in range(len(normalized_patterns)):
-        if normalized_patterns[x] in model_name:
-            return x
-    return None
 
 class AppInitializationRouter(BaseAPIRouter):
     dir = f"repo/{app_name}"
     @init_helper(dir)
     async def init_app(self):
-        import importlib
-
-        self.models = {}
-        self.models_list = os.listdir("bmodels")
-        tokenizer_dict = {}
-
-        for root, dirs, files in os.walk('./models'):
-            if 'token_config' in dirs:
-                full_path = os.path.join(root, 'token_config')
-                # 分割路径
-                parts = root.split(os.sep)
-                # 假设模型目录总是位于 './models' 目录下的第一级子目录
-                if len(parts) > 2 and parts[1] == 'models':
-                    model_name = parts[2]
-                else:
-                    model_name = os.path.basename(root)
-                tokenizer_dict[model_name] = full_path
-
-
         args = argparse.Namespace(
+            model_path = 'bmodels/qwen2.5-3b_int4_seq512_1dev.bmodel',
+            tokenizer_path = 'llm_models/Qwen2_5/support/token_config',
             devid='0',
             temperature=1.0,
             top_p=1.0,
@@ -50,59 +21,31 @@ class AppInitializationRouter(BaseAPIRouter):
             max_new_tokens=1024,
             generation_mode="greedy",
             prompt_mode="prompted",
-            enable_history=True,
+            enable_history=False,
             lib_path=''
         )
 
-        mm = list(tokenizer_dict.keys())
-        nn = list(tokenizer_dict.values())
-
-        for model_name in self.models_list:
-            id = match_model(model_name, mm)
-            if id is None:
-                print(f"Model {model_name} does not match any available model.")
-                continue
-            tokenizer_path = nn[id]
-            args.model_path = f"bmodels/{model_name}"
-            args.tokenizer_path = tokenizer_path
-
-            # if 'chat' in sys.modules:
-            #     del sys.modules['chat']
-
-            # sys.path.insert(0, f"models/{mm[id]}/python_demo")
-
-            module_name = f"models.{mm[id]}.python_demo.pipeline"
-            module = importlib.import_module(module_name)
-
-            model_class = getattr(module, mm[id])
-
-            self.models[f"{model_name}"] = model_class(args)
-
-            # sys.path.remove(f"models/{mm[id]}/python_demo")
-
+        from repo.llm_tpu.llm_models.Qwen2_5.python_demo.pipeline import Qwen2_5
+        self.llm_model = Qwen2_5(args)
         return {"message": f"应用 {self.app_name} 已成功初始化。"}
     
     async def destroy_app(self):
-        del self.models, self.models_list
+        del self.llm_model
 
 router = AppInitializationRouter(app_name=app_name)
 
 class ChatRequest(BaseModel):
-    model: str = Field("qwen1.5-1.8b_int8_1dev_seq1280.bmodel", description="bmodel file name")
+    model: str = Field("qwen2.5-3b_int4_seq512_1dev.bmodel", description="bmodel file name")
     messages: list = Field([{"role":"system","content":"You are a helpful assistant."},{"role":"user","content":"hello"}], description="Chat history")
     stream: bool = Field(False, description="Stream response")
 
 @router.post("/v1/chat/completions")
 @change_dir(router.dir)
 async def chat_completions(request: ChatRequest):
-    best_match = get_close_matches(request.model, router.models_list, n=1, cutoff=0.0)
-    if best_match:
-        slm = router.models[best_match[0]]
-    else:
-        slm = router.models['qwen2.5-3b_int4_seq512_1dev.bmodel']
+
+    slm = router.llm_model
     
-    slm.history = request.messages
-    tokens = slm.tokenizer.apply_chat_template(slm.history, tokenize=True, add_generation_prompt=True)
+    tokens = slm.tokenizer.apply_chat_template(request.messages, tokenize=True, add_generation_prompt=True)
 
     token = slm.model.forward_first(tokens)
     output_tokens = [token]
@@ -112,7 +55,7 @@ async def chat_completions(request: ChatRequest):
 
     if request.stream:
         def generate_responses():
-            yield '{"choices": [{"delta": {"role": "assistant", "content": "'
+            # yield '{"delta": {"role": "assistant", "content": "'
             while True:
                 token = slm.model.forward_next()
                 if token in slm.EOS or slm.model.token_length >= slm.model.SEQLEN:
@@ -120,8 +63,8 @@ async def chat_completions(request: ChatRequest):
                 output_tokens.append(token)
                 response_text = slm.tokenizer.decode([token])
                 yield response_text
-            yield '"}}]}'
-        return StreamingResponse(generate_responses(), media_type="application/json")
+            # yield '"}}'
+        return StreamingResponse(generate_responses(), media_type="text/plain")
     
     else:
         while True:
@@ -130,8 +73,8 @@ async def chat_completions(request: ChatRequest):
                 break
             output_tokens += [token]
         slm.answer_cur = slm.tokenizer.decode(output_tokens)
-        slm.history = []
-        return JSONResponse({"choices": [{"delta": {"role": "assistant", "content": slm.answer_cur}}]})
+        # return JSONResponse({"delta": {"role": "assistant", "content": slm.answer_cur}})
+        return slm.answer_cur
     
 
 # curl --no-buffer -X 'POST' \

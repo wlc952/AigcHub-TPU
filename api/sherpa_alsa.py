@@ -8,7 +8,7 @@ from fastapi import File, Form, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 
-app_name = "sherpa"
+app_name = "sherpa_alsa"
 
 def run_shell_command(command):
     pattern = re.compile(r'\{.*?\}')
@@ -29,7 +29,7 @@ class AppInitializationRouter(BaseAPIRouter):
     dir = f"repo/{app_name}"
     @init_helper(dir)
     async def init_app(self):
-        self.cmd = "build/bin/sherpa-onnx --tokens=./sherpa_models/tokens.txt --zipformer2-ctc-model=./sherpa_models/zipformer2_ctc_F32.bmodel "
+        self.cmd = "build/bin/sherpa-onnx-alsa --tokens=./sherpa_models/tokens.txt --zipformer2-ctc-model=./sherpa_models/zipformer2_ctc_F32.bmodel plughw:1,0"
         return {"message": f"应用 {self.app_name} 已成功初始化。"}
     
     async def destroy_app(self):
@@ -43,15 +43,14 @@ router = AppInitializationRouter(app_name=app_name)
 @router.post("/v1/audio/transcriptions")
 @change_dir(router.dir)
 async def sherpa(
-    # file: UploadFile = File(...),
-    file_tmp_path: str = Form(...),
+    file: UploadFile = File(...),
     response_format: Optional[str] = Form("text"),
 ):
 
     # save the audio file
-    # file_tmp_path = "/data/tmpdir/sherpa.wav"
-    # with open(file_tmp_path, "wb") as buffer:
-        # buffer.write(file.file.read())
+    file_tmp_path = "/data/tmpdir/sherpa.wav"
+    with open(file_tmp_path, "wb") as buffer:
+        buffer.write(file.file.read())
         
     audio_start_time = time.time()
     result = run_shell_command(router.cmd + file_tmp_path)
