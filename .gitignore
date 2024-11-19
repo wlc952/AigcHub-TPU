@@ -3,5 +3,4 @@
 *.npy
 *.onnx
 *venv
-!repo/__init__.py
 debug
