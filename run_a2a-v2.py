@@ -13,6 +13,20 @@ import re
 
 session = requests.Session()
 
+def get_host_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
+
+host_ip = get_host_ip()
+
 def preprocess_audio(file_path):
     audio = AudioSegment.from_file(file_path)
     chunks = split_on_silence(audio, min_silence_len=500, silence_thresh=-40)
@@ -144,5 +158,5 @@ def process_audio(file_path):
     return response_text
 
 iface = gr.Interface(fn=process_audio, inputs=gr.Audio(type="filepath"), outputs="text")
-
+print(f"Running on: http://{host_ip}:5000")
 iface.launch(server_name="0.0.0.0", server_port=5000, inbrowser=True)
