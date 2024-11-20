@@ -159,5 +159,5 @@ def process_audio(file_path):
     return response_text
 
 iface = gr.Interface(fn=process_audio, inputs=gr.Audio(type="filepath"), outputs="text")
-print(f"Running on: http://{host_ip}:5000")
+print(f"\nRunning on: http://{host_ip}:5000")
 iface.launch(server_name="0.0.0.0", server_port=5000, inbrowser=True)
