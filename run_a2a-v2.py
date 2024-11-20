@@ -10,6 +10,7 @@ import random
 import queue
 import threading
 import re
+import socket
 
 session = requests.Session()
 
