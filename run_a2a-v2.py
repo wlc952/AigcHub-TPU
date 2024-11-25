@@ -78,33 +78,18 @@ def llm(messages):
     desired_chars = 10  # 例如10个字符
     chunk_size = 30  # 例如10个字符 * 3字节 = 30字节
 
-    # for chunk in response.iter_content(chunk_size=chunk_size):
-    #     if chunk:
-    #         decoded_chunk = chunk.decode('utf-8', errors='ignore')
-    #         buffer += decoded_chunk
-    #         if re.search(r'[.,!?，。！？]', buffer) and len(buffer)>1:
-    #             # 处理完整的句子
-    #             # t2a(buffer)
-    #             threading.Thread(target=t2a, args=(buffer,)).start()
-    #             yield buffer
-    #             print(f"LLM Response: {buffer}, Time: {time.time() - st:.2f}s")
-    #             buffer = ""
-    # # 处理剩余的缓冲区内容
-    # if buffer:
-    #     t2a(buffer)
-    #     print(f"LLM Response: {buffer}, Time: {time.time() - st:.2f}s")
-    decoder = codecs.getincrementaldecoder('utf-8')()
-    buffer = ""
-
     for chunk in response.iter_content(chunk_size=chunk_size):
         if chunk:
             decoded_chunk = decoder.decode(chunk)
             buffer += decoded_chunk
-            if re.search(r'[.,!?，。！？]', buffer) and len(buffer) > 1:
-                threading.Thread(target=t2a, args=(buffer,)).start()
-                yield buffer
-                print(f"LLM Response: {buffer}, Time: {time.time() - st:.2f}s")
-                buffer = ""
+            match = re.search(r'([.,!?，。！？])', buffer)
+            if match:
+                end_index = match.end()
+                to_send = buffer[:end_index]
+                threading.Thread(target=t2a, args=(to_send,)).start()
+                yield to_send
+                print(f"LLM Response: {to_send}, Time: {time.time() - st:.2f}s")
+                buffer = buffer[end_index:]
     
     # 处理剩余的缓冲区内容
     remaining = decoder.decode(b'', final=True)
