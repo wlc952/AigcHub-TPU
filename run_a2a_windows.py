@@ -92,11 +92,14 @@ def llm(messages):
         if chunk:
             decoded_chunk = decoder.decode(chunk)
             buffer += decoded_chunk
-            if re.search(r'[.,!?，。！？]', buffer):
-                threading.Thread(target=t2a, args=(buffer,)).start()
-                yield buffer
-                print(f"LLM Response: {buffer}, Time: {time.time() - st:.2f}s")
-                buffer = ""
+            match = re.search(r'([.,!?，。！？])', buffer)
+            if match:
+                end_index = match.end()
+                to_send = buffer[:end_index]
+                threading.Thread(target=t2a, args=(to_send,)).start()
+                yield to_send
+                print(f"LLM Response: {to_send}, Time: {time.time() - st:.2f}s")
+                buffer = buffer[end_index:]
     
     # 处理剩余的缓冲区内容
     remaining = decoder.decode(b'', final=True)
