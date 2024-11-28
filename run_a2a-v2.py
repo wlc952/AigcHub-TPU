@@ -77,6 +77,7 @@ def llm(messages):
     # 检查响应状态
     desired_chars = 10  # 例如10个字符
     chunk_size = 30  # 例如10个字符 * 3字节 = 30字节
+    decoder = codecs.getincrementaldecoder('utf-8')()
 
     for chunk in response.iter_content(chunk_size=chunk_size):
         if chunk:
