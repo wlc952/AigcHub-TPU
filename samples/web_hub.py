@@ -86,6 +86,8 @@ def llm_chat(ip, input_str, image_str, chatbot, model_name):
     for line in response.iter_lines():
         if line:
             decoded_line = line.decode('utf-8').strip()
+            if decoded_line.startswith('data:'):
+                decoded_line = decoded_line[len('data:'):].strip()
             if decoded_line == '':
                 continue  # 跳过心跳包或空行
             data_json = json.loads(decoded_line)
