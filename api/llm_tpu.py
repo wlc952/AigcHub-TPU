@@ -143,10 +143,10 @@ async def chat_completions(request: ChatRequest):
                         pre_word = word
                         word = slm.tokenizer.decode([token, token], skip_special_tokens=True)[len(pre_word):]
                     data = {"choices": [{"delta": {"role": "assistant", "content": word}}]}
-                    yield json.dumps(data) + "\n"
+                    yield f"data:{json.dumps(data)}\n\n"
                     output_tokens = []
                 token = slm.model.forward_next()
-        return StreamingResponse(generate_responses(token), media_type="application/json")
+        return StreamingResponse(generate_responses(token), media_type="text/event-stream")
     else:
         output_tokens = [token]
         while True:
@@ -155,7 +155,7 @@ async def chat_completions(request: ChatRequest):
                 break
             output_tokens += [token]
         slm.answer_cur = slm.tokenizer.decode(output_tokens)
-        return JSONResponse({"choices": [{"delta": {"role": "assistant", "content": slm.answer_cur}}]})
+        return JSONResponse({"choices": [{"message": {"role": "assistant", "content": slm.answer_cur}}]})
     
 ### 常规测试
 # curl --no-buffer -X 'POST' \
