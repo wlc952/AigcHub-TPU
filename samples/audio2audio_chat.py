@@ -87,6 +87,8 @@ def llm(ip, messages):
     for line in response.iter_lines():
         if line:
             decoded_line = line.decode('utf-8').strip()
+            if decoded_line.startswith('data:'):
+                decoded_line = decoded_line[len('data:'):].strip()
             if decoded_line == '':
                 continue  # 跳过心跳包或空行
             # 解析JSON数据
