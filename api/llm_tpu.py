@@ -8,6 +8,9 @@ import re
 import json
 from pydantic import BaseModel, Field
 from difflib import get_close_matches
+import base64
+from io import BytesIO
+from PIL import Image
 
 app_name = "llm_tpu"
 
@@ -102,10 +105,17 @@ async def chat_completions(request: ChatRequest):
             if x['type'] == 'text':
                 slm.input_str = x['text']
             elif x['type'] == 'image_url':
-                url = x['image_url']['url']
-                png = url.split('.')[-1]
-                os.system(f"wget {url} -O /data/tmpdir/image.{png}")
-                slm.image_str = f"/data/tmpdir/image.{png}"
+                image_data = x['image_url']['url']
+                if image_data.startswith("data:"):
+                    base64_data = image_data.split(",")[1]  # 去掉前缀
+                    image_bytes = base64.b64decode(base64_data)  # 解码
+                    image = Image.open(BytesIO(image_bytes))  # 读取图片
+                    image.save("/data/tmpdir/image.png", format='PNG')
+                    slm.image_str = "/data/tmpdir/image.png"
+                else:
+                    png = image_data.split('/')[-1]
+                    os.system(f"wget {image_data} -O /data/tmpdir/{png}")
+                    slm.image_str = f"/data/tmpdir/{png}"
             elif x['type'] == 'image_path':
                 slm.image_str = x['image_path']['path'] if isinstance(x['image_path'], dict) else x['image_path']
             else:
