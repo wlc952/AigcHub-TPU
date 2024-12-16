@@ -90,6 +90,8 @@ class ChatRequest(BaseModel):
 async def chat_completions(request: ChatRequest):
     best_match = get_close_matches(request.model, router.models_list, n=1, cutoff=0.0)
     if best_match:
+        m_name = best_match[0]
+        seq_len = int(m_name.split('seq')[1].split('_')[0].split('.')[0]) if 'seq' in m_name else 512
         slm = router.models[best_match[0]]
     else:
         slm = router.models['minicpm3-4b_int4_seq512_1dev.bmodel']
@@ -109,6 +111,8 @@ async def chat_completions(request: ChatRequest):
             else:
                 slm.image_str = ''
     else:
+        if len(request.messages[-1]['content']) > seq_len:
+            request.messages[-1]['content'] = request.messages[-1]['content'][:seq_len]
         slm.input_str = request.messages[-1]['content']
 
     if "minicpmv" in request.model.lower():
@@ -120,7 +124,13 @@ async def chat_completions(request: ChatRequest):
         if slm.image_str:
             if not os.path.exists(slm.image_str):
                 print("Can't find image: {}".format(slm.image_str))
-
+        
+        if request.messages[0]['role'] == 'system':
+            prompt = request.messages[0]['content']
+        else:
+            prompt = "You are a helpful assistant."
+        slm.system_prompt = f'<|im_start|>system\n{prompt}\n<|im_end|>\n<|im_start|>user\n'
+    
         slm.encode()
         token = slm.model.forward_first(slm.input_ids, slm.pixel_values, slm.image_offset)
         EOS = [slm.ID_EOS, slm.ID_IM_END]
