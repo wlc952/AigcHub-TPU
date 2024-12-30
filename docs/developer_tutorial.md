@@ -1,18 +1,19 @@
-# 贡献指南【如何给 AigcHub 添加新应用】
+# 开发指南【如何给 AigcHub 添加新应用】
 
 ## AigcHub-TPU项目结构
 
 ```
 .
-├── README.md # 项目readme
-├── api # FastAPI接口定义， repo 中的每个 module 与这里的一个文件对应
-├── apps.txt # 应用模块列表
-├── docs # 文档
-├── main_hub.py # 项目启动入口
-├── repo # 模块源码文件夹，其中每个文件夹都能作为一个独立的应用仓库
+├── api              # FastAPI接口定义，repo 中的每个 module 与这里的一个文件对应
+├── docs             # 开发文档
+├── repo             # 模块源码文件夹，其中每个文件夹都能作为一个独立的应用仓库
+├── samples          # 基于api开发的应用
+├── scripts          # 项目配置、启动脚本
+├── supoort          # 部署工具
+├── README.md        # 项目readme
+├── apps.txt         # 应用模块列表
+├── main_hub.py      # 项目启动入口
 ├── requirements.txt # 项目整体依赖
-├── samples # 基于api开发的应用
-├── scripts # 项目配置、启动脚本
 ```
 
 ## 如何接入新应用
@@ -62,30 +63,22 @@ SG2300X可用的 runtime API 包括：
 ### 二、将应用作为模块接入到 AigcHub
 
 #### 1. 给应用仓库新增`aigchub`分支
-- 在该分支添加环境配置脚本`prepare.sh`和模型下载脚本`download.sh`。建议将模型文件等必要的大文件直接上传到应用github仓库的 release 中。
+- 在该分支添加环境配置脚本`prepare.sh`和模型下载脚本`download.sh`。建议将模型文件等必要的大文件直接上传到应用github仓库的 release 中，或者使用modelscope/huggingface lfs。
 - 在应用代码目录的根目录下，测试这两个脚本能否正确安装环境和下载模型，确保应用代码本身能正常运行。
 - 另外，要注意环境配置不应与 AigcHub 中其他应用冲突。AigcHub 根目录中 requirements.txt已经指定版本安装的包（如 torch、torchaudio、torchvision），不建议另行指定版本，这可能会导致 torch 重新安装影响其他应用。如果有*兼容性问题*，请尝试*在应用模块内部的代码中解决*或[发布issue并附上新应用仓库地址以及完整报错信息](https://github.com/ZillaRU/AigcHub-TPU/issues)。
 
 #### 2. Fork AigcHub仓库并修改
-- 在 repo 目录下执行`git clone 应用的github链接`
+- 在本仓库的app.txt文件中添加新行，写入新的模块名/git链接/任务类型，如`sherpa, https://github.com/wlc952/Kaldi-TPU.git, audio`，使用`bash script/init_app.sh 新模块名`命令进行仓库克隆和初始化。
 - 在 api 目录下定义 FastAPI 接口。每一个py文件中定义了一个router，可参考已有的例子。
 - FastAPI的更多具体用法请参考[docs](https://fastapi.tiangolo.com/tutorial/)。
-
+- API的参数写法建议参考[openai api](https://platform.openai.com/docs/api-reference)。
 此处以[emotivoice 的 api](../api/emotivoice.py)为例讲解。
 ```python
-from pydantic import BaseModel, Field
-import base64
-from api.base_api import BaseAPIRouter, change_dir, init_helper
-import os
-from typing import Optional
-import sys
-import uuid
-
-class AppInitializationRouter(BaseAPIRouter): # 固定写法：继承BaseAPIRouter
-    dir = "repo/emotivoice" # 固定写法：dir = repo/模块名称
-    @init_helper(dir) # 固定写法：为了避免修改应用仓库中引用关系导致应用本身不能单独使用，init_helper装饰器会临时改变sys.path
-    async def init_app(self): # 固定写法：必须实现这个函数去执行加载模型等必要的应用初始化操作，InitMiddleware限制了这个函数不会被重复执行
-        # 具体的模型import 和 加载
+# 初始化加载模型
+class AppInitializationRouter(BaseAPIRouter):
+    dir = f"repo/{app_name}"
+    @init_helper(dir)
+    async def init_app(self):
         from repo.emotivoice.demo_page import get_models
         models, tone_color_converter, g2p, lexicon = get_models()
         self.models = {
@@ -97,25 +90,29 @@ class AppInitializationRouter(BaseAPIRouter): # 固定写法：继承BaseAPIRout
         return {"message": f"应用 {self.app_name} 已成功初始化。"}
     
     async def destroy_app(self):
-        del models, tone_color_converter, g2p, lexicon
+        del models, tone_color_converter, g2p, lexicon, self.models
 
 # 固定写法
 app_name = "emotivoice"
 router = AppInitializationRouter(app_name=app_name)
 
 # 定义一个请求体
+# 文本转语音 以及 音色克隆；兼容openai api的v1/audio/speech接口
 class TTSRequest(BaseModel):
-    text_content: str = Field(..., description="要转换为语音的文本")
-    speaker: str = Field('8051', description="说话人ID")
-    emotion: Optional[str] = Field('', description="情感提示")
+    ## 兼容参数
+    input: str = Field(..., description="要转换为语音的文本")
+    voice: Optional[str] = Field('8051', description="说话人ID")
+    response_format: Optional[str] = Field('wav', description="音频格式")
+    ## 专有参数
+    emotion: Optional[str] = Field('', description="情感提示（可选）")
+    audio_path: Optional[str] = Field('', description="要参考的目标音色路径（可选）")
 
 # 定义具体的功能接口
-@router.post("/tts")
-@change_dir(router.dir) # 固定写法：用于临时改变当前工作目录，避免对应用代码本身做修改
-async def tts_api(request: TTSRequest):
-    from repo.emotivoice.demo_page import tts
-    # 省略tts()调用等业务代码
-    return {"audio_base64": audio_base64}
+@router.post("/v1/audio/speech")
+@change_dir(router.dir)
+async def text_to_speech(request: TTSRequest):
+    # 省略具体实现代码
+    return Response(content=buffer.getvalue(), media_type=f"audio/{response_format}")
 ```
 
 - 在`app.txt`添加新应用模块的`模块名称, github链接, 类别(image / audio / text / ...)`
@@ -126,5 +123,10 @@ async def tts_api(request: TTSRequest):
 
 #### 2. 提交您的修改到自有的AigcHub仓库并提Pull request给本仓库
 Pull request应明确列出新增的应用的用途、是否影响基础环境。
+
+### 三、为AigcHub添加新的samples应用
+
+samples文件夹中是一些基于本项目的一个或多个api所编写的前端应用。
+举例来说，`audio2audio_chat.py`是基于`sherpa`、`llm_tpu`和`emotivoice`三种api编写的语音对话聊天机器人应用demo，即ASR + LLM + TTS级联的语音对话大模型。
 
 ## 如果您对现有文档/应用有改进建议，或建议支持某些新应用，欢迎[发布issue](https://github.com/ZillaRU/AigcHub-TPU/issues)。
