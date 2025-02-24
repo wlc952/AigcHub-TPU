@@ -63,17 +63,14 @@ async def chat_completions(request: ChatRequest):
         def generate_responses():
             token = slm.model.forward_first(ids)
             output_tokens = []
-            while True:
+            while token not in EOS and slm.model.total_length < slm.model.SEQLEN:
                 output_tokens.append(token)
-                if token in EOS or slm.model.total_length >= slm.model.SEQLEN:
-                    break
                 word = slm.tokenizer.decode(output_tokens, skip_special_tokens=True)
-
                 if "�" in word:
                     token = slm.model.forward_next()
                     continue
                 data = {"choices": [{"delta": {"role": "assistant", "content": word}}]}
-                yield f"data:{json.dumps(data)}\n\n"
+                yield f"data:{json.dumps(data, ensure_ascii=False)}\n\n"
                 output_tokens = []
                 token = slm.model.forward_next()
         return StreamingResponse(generate_responses(), media_type="text/event-stream")
