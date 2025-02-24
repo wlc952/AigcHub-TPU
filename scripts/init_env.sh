@@ -11,7 +11,6 @@ if [ "$AVAILABLE_SPACE" -lt "$REQUIRED_SPACE" ]; then
     echo "sudo apt-get autoclean"
     echo "sudo apt-get autoremove"
     echo "rm -rf ~/.cache/pip"
-    exit 1
 fi
 
 if [ ! -d "hub_venv" ]; then

@@ -18,7 +18,7 @@
 | [flowmirror](https://github.com/wlc952/flow_mirror_tpu.git) | 语音对话（目前效果不佳）        | 4375 MB  | `/v1/audio/translation` |              |
 | [whisper](https://github.com/wlc952/whisper-TPU.git)     | 语音转文本                        | 844 MB   | `/v1/audio/transcriptions` |              |
 | [rmbg](https://github.com/wlc952/rmbg_tpu.git)        | 图像去背景                           | 256 MB   | `/v1/images/edit` |              |
-| [llm_tpu](https://github.com/wlc952/llm_aigchub.git)     | 大语言模型（Phi3, Qwen1.5,<br>Qwen2.5, MiniCPM-V2.6, MiniCPM3）| ~ 1.5-5 G | `/v1/chat/completions` |              |
+| [llm_tpu](https://github.com/wlc952/llm_aigchub.git)     | 大语言模型（Phi3, Qwen1.5,<br>Qwen2.5, MiniCPM-V2.6, MiniCPM3, deepseek）| ~ 1.5-5 G | `/v1/chat/completions` |              |
 | [sherpa](https://github.com/wlc952/Kaldi-TPU.git)       | 语音转文本                          |  ~ 255 MB  | `/v1/audio/transcriptions` |              |
 | [HivisionIDPhotos](https://github.com/wlc952/HivisionIDPhotos-TPU.git)       | 证件照制作                          |   | 暂无api |              |
 
@@ -36,7 +36,8 @@
 ### 1. 下载本项目并初始化环境 (初次使用 AigcHub)
 
 ```sh
-git clone https://github.com/ZillaRU/AigcHub-TPU.git && bash scripts/init_env.sh
+git clone https://github.com/wlc952/AigcHub-TPU.git
+bash scripts/init_env.sh
 ```
 
 ### 2. 应用初始化（初次安装某个应用）
