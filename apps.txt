@@ -9,4 +9,4 @@ whisper_tpu, https://github.com/wlc952/whisper-TPU.git, audio
 rmbg, https://github.com/wlc952/rmbg_tpu.git, image
 llm_tpu, https://github.com/wlc952/llm_aigchub.git, text
 sherpa, https://github.com/wlc952/Kaldi-TPU.git, audio
-deepseek, https://github.com/wlc952/deepseek_aigchub.git, text
+deepseek, https://www.modelscope.cn/wlc952/deepseek_aigchub.git, text
