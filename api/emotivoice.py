@@ -83,7 +83,7 @@ async def voice_changer(
 class TTSRequest(BaseModel):
     ## 有意义的兼容参数
     input: str = Field(..., description="要转换为语音的文本")
-    voice: Optional[str] = Field('8051', description="说话人ID")
+    # voice: Optional[str] = Field('8051', description="说话人ID")
     response_format: Optional[str] = Field('wav', description="音频格式")
 
     ## 专有参数
@@ -99,9 +99,10 @@ class TTSRequest(BaseModel):
 async def text_to_speech(request: TTSRequest):    
     from repo.emotivoice.demo_page import tts
     from repo.emotivoice.tone_color_conversion import get_se
+    voice = '8051'
 
     _name = f'./temp/{str(uuid.uuid4())}.wav'
-    src_wav = tts(request.input, request.emotion, request.voice, _name,
+    src_wav = tts(request.input, request.emotion, voice, _name,
                   router.models['models'], router.models['g2p'], router.models['lexicon'])
     save_path = _name
     if request.audio_path and os.path.exists(request.audio_path):
