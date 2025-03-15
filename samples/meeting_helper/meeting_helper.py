@@ -192,7 +192,7 @@ with gr.Blocks() as demo:
         gr.Markdown("### 📄 文档智能提炼")
         with gr.Row():
             with gr.Column(scale=2):
-                ip_0 = gr.Textbox(lines=1, value="localhost:8000/deepseek", placeholder="请输入api url", show_label=False)
+                ip_0 = gr.Textbox(lines=1, value="localhost:8000/qwen", placeholder="请输入api url", show_label=False)
                 input_0 = gr.Textbox(label="输入文档内容", lines=21, placeholder="请直接粘贴文档内容或输入文本...")
                 with gr.Row():
                     submitBtn_0 = gr.Button("Submit", variant="primary")
@@ -208,8 +208,8 @@ with gr.Blocks() as demo:
         gr.Markdown("### 📝 会议纪要生成")
         with gr.Row():
             with gr.Column(scale=1):
-                ip_1 = gr.Textbox(lines=1, value="localhost:8000", placeholder="请输入api url...", show_label=False)
-                ip_2 = gr.Textbox(lines=1, value="localhost:8000/deepseek", placeholder="请输入api url...", show_label=False)
+                ip_1 = gr.Textbox(lines=1, value="localhost:8000", placeholder="请输入api url...", show_label=False, visible=False)
+                ip_2 = gr.Textbox(lines=1, value="localhost:8000/qwen", placeholder="请输入api url...", show_label=False)
                 prompt_1 = gr.Textbox(lines=1, value="语言简练地总结文字内容", label="PROMPT")
                 audio_file = gr.Audio(type="filepath", label="上传音频文件", show_label=False)
                 with gr.Row():
@@ -226,8 +226,8 @@ with gr.Blocks() as demo:
         gr.Markdown("### 🤖 聊天机器人")
         with gr.Row():
             with gr.Column():
-                ip = gr.Textbox(lines=1, value="localhost:8000/deepseek", placeholder="请输入api url...", show_label=False)
-                prompt = gr.Textbox(lines=1, value="总结用户输入的文字内容", label="PROMPT")
+                ip = gr.Textbox(lines=1, value="localhost:8000/qwen", placeholder="请输入api url...", show_label=False)
+                prompt = gr.Textbox(lines=1, value="You are a helpful assistant.", label="PROMPT")
                 chatbot = gr.Chatbot(label="Chat with LLM", height=400, type='messages')
                 with gr.Row():
                     with gr.Column():
