@@ -15,13 +15,13 @@ class AppInitializationRouter(BaseAPIRouter):
     async def init_app(self):
         args = argparse.Namespace(
             devid='0',
-            dir_path = f'{abs_dir}/repo/{app_name}/deepseek-r1-distill-qwen-7b',
+            dir_path = f'{abs_dir}/repo/{app_name}/deepseek-r1-distill-qwen-1.5b-2048',
             generation_mode='greedy',
             test_input=None,
             test_media=None,
             model_type=None,
             enable_history=False,
-            max_new_tokens=1024,
+            max_new_tokens=2048,
             model_path='',
             repeat_last_n=32,
             repeat_penalty=1.2,
@@ -39,7 +39,7 @@ class AppInitializationRouter(BaseAPIRouter):
 router = AppInitializationRouter(app_name=app_name)
 
 class ChatRequest(BaseModel):
-    model: str = Field("deepseek-r1-distill-qwen-7b", description="model name")
+    model: str = Field("deepseek-r1-distill-qwen-1.5b-2048", description="model name")
     messages: list = Field([{"role":"user","content":"hello"}], description="Chat history")
     stream: bool = Field(False, description="Stream response")
 
@@ -48,7 +48,8 @@ class ChatRequest(BaseModel):
 async def chat_completions(request: ChatRequest):
     slm = router.llm_model
 
-    slm.history = [{"role": "system", "content": "You are a helpful assistant."}]
+    # slm.history = [{"role": "system", "content": "You are a helpful assistant."}]
+    slm.history = []
     slm.history += request.messages
 
     text = slm.apply_chat_template(slm.history)
