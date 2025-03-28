@@ -8,6 +8,6 @@ flowmirror, https://github.com/wlc952/flow_mirror_tpu.git, audio
 whisper_tpu, https://github.com/wlc952/whisper-TPU.git, audio
 rmbg, https://github.com/wlc952/rmbg_tpu.git, image
 llm_tpu, https://github.com/wlc952/llm_aigchub.git, text
-sherpa, https://modelscope.cn/models/wlc952/sherpa.git, audio
+sherpa, https://github.com/wlc952/Kaldi-TPU.git, audio
 deepseek, https://www.modelscope.cn/wlc952/deepseek_aigchub.git, text
 qwen, https://modelscope.cn/models/wlc952/qwen.git, text
